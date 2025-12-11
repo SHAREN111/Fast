@@ -1,0 +1,5 @@
+skip_scales: 29   
+alph: 5
+beta: 0.2
+s_min: 27
+prunable: [27,28,29]

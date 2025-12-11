@@ -1,0 +1,97 @@
+
+bash base.sh FastVAR 0 fastvar
+bash base.sh FastVAR 1 fastvar
+bash base.sh FastVAR 2 fastvar
+bash base.sh FastVAR 3 fastvar
+bash base.sh FastVAR 4 fastvar
+
+bash base.sh FastVAR2 0 fastvar
+bash base.sh FastVAR2 1 fastvar
+bash base.sh FastVAR2 2 fastvar
+bash base.sh FastVAR2 3 fastvar
+bash base.sh FastVAR2 4 fastvar
+
+bash base.sh skip_27 0
+bash base.sh skip_27 1
+bash base.sh skip_27 2
+bash base.sh skip_27 3
+bash base.sh skip_27 4
+
+bash base.sh skip_28 0
+bash base.sh skip_28 1
+bash base.sh skip_28 2
+bash base.sh skip_28 3
+bash base.sh skip_28 4
+
+bash base.sh skip_29 0
+bash base.sh skip_29 1
+bash base.sh skip_29 2
+bash base.sh skip_29 3
+bash base.sh skip_29 4
+
+bash base.sh ttm 0 TTM1
+bash base.sh ttm 1 TTM1
+bash base.sh ttm 2 TTM1
+bash base.sh ttm 3 TTM1
+bash base.sh ttm 4 TTM1
+
+wait
+
+
+CUDA_VISIBLE_DEVICES=4,5,6,7 python3 /mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/dongchengqi/gpu.py -w 4 &
+
+CUDA_VISIBLE_DEVICES=0 python3 ./evaluation/vbench_metric.py --exp_name FastVAR      &
+CUDA_VISIBLE_DEVICES=1 python3 ./evaluation/vbench_metric.py --exp_name FastVAR2     &
+CUDA_VISIBLE_DEVICES=2 python3 ./evaluation/vbench_metric.py --exp_name skip_27     &
+CUDA_VISIBLE_DEVICES=3 python3 ./evaluation/vbench_metric.py --exp_name skip_28     &
+CUDA_VISIBLE_DEVICES=0 python3 ./evaluation/vbench_metric.py --exp_name skip_29      &
+CUDA_VISIBLE_DEVICES=1 python3 ./evaluation/vbench_metric.py --exp_name ttm     &
+
+
+
+
+# bash base.sh raw 0
+# bash base.sh raw 1
+# bash base.sh raw 2
+# bash base.sh raw 3
+# bash base.sh raw 4
+
+
+
+# bash base.sh fastvar_50_60_100_100 0 fastvar
+# bash base.sh fastvar_50_60_100_100 1 fastvar
+# bash base.sh fastvar_50_60_100_100 2 fastvar
+# bash base.sh fastvar_50_60_100_100 3 fastvar
+# bash base.sh fastvar_50_60_100_100 4 fastvar
+
+
+
+# bash base.sh sparsevar_0.75 0 sparsevar 0.75
+# bash base.sh sparsevar_0.75 1 sparsevar 0.75
+# bash base.sh sparsevar_0.75 2 sparsevar 0.75
+# bash base.sh sparsevar_0.75 3 sparsevar 0.75
+# bash base.sh sparsevar_0.75 4 sparsevar 0.75
+
+# bash base.sh sparsevar_0.8 0 sparsevar 0.8
+# bash base.sh sparsevar_0.8 1 sparsevar 0.8
+# bash base.sh sparsevar_0.8 2 sparsevar 0.8
+# bash base.sh sparsevar_0.8 3 sparsevar 0.8
+# bash base.sh sparsevar_0.8 4 sparsevar 0.8
+
+# bash base.sh sparsevar_0.85 0 sparsevar 0.85
+# bash base.sh sparsevar_0.85 1 sparsevar 0.85
+# bash base.sh sparsevar_0.85 2 sparsevar 0.85
+# bash base.sh sparsevar_0.85 3 sparsevar 0.85
+# bash base.sh sparsevar_0.85 4 sparsevar 0.85
+
+# bash base.sh sparsevar_0.9 0 sparsevar 0.9
+# bash base.sh sparsevar_0.9 1 sparsevar 0.9
+# bash base.sh sparsevar_0.9 2 sparsevar 0.9
+# bash base.sh sparsevar_0.9 3 sparsevar 0.9
+# bash base.sh sparsevar_0.9 4 sparsevar 0.9
+
+# bash base.sh sparsevar_0.95 0 sparsevar 0.95
+# bash base.sh sparsevar_0.95 1 sparsevar 0.95
+# bash base.sh sparsevar_0.95 2 sparsevar 0.95
+# bash base.sh sparsevar_0.95 3 sparsevar 0.95
+# bash base.sh sparsevar_0.95 4 sparsevar 0.95
