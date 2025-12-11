@@ -1,0 +1,3 @@
+scale_list = [27, 28, 29]
+skip = 28
+prune_ratio = [0.1, 0.2]

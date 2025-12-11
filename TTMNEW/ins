@@ -1,0 +1,11 @@
+hf download FoundationVision/InfinityStar --local-dir /data3/chengqidong/mrg/InfinityStar/save/pth
+cd /data3/chengqidong/mrg/InfinityStar
+conda activate star
+CUDA_VISIBLE_DEVICES=1 python3 ./tools/infer_video_480p.py
+CUDA_VISIBLE_DEVICES=3 python3 ./tools/infer_video_720p.py
+CUDA_VISIBLE_DEVICES=6 python3 ./evaluation/vbench_720.py --exp_name raw --index 4
+CUDA_VISIBLE_DEVICES=2 python3 ./evaluation/vbench_720.py --exp_name skip_28
+CUDA_VISIBLE_DEVICES=4 python3 ./evaluation/vbench_720.py --exp_name TTM_10 --index 1
+CUDA_VISIBLE_DEVICES=2 python3 ./evaluation/vbench_metric.py --exp_name raw
+CUDA_VISIBLE_DEVICES=7 python3 ./evaluation/visual_metric.py
+screen -ls | awk '/[0-9]+\./ {print $1}' | xargs -I {} screen -S {} -X quit
