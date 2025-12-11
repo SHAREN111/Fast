@@ -51,8 +51,9 @@ def token_mse_keep_indices(x: torch.Tensor, ratio=0.5):
     # (B,1,C) batch-wise mean token
     mean_token = x.mean(dim=1, keepdim=True)
 
+    mean_token_exp = mean_token.expand_as(x)  # shape 和 x 一样
     # MSE for each token → (B,L,C)
-    mse = F.mse_loss(x, mean_token, reduction='none').mean(dim=-1).mean(dim=0)  # (B,L)
+    mse = F.mse_loss(x, mean_token_exp, reduction='none').mean(dim=-1).mean(dim=0)  # (B,L)
 
     # 取 MSE 最小的 K 个 token 索引
     keep_indices = torch.topk(mse, K, dim=0).indices  # 用 -mse 等价于最小值 topk
@@ -306,7 +307,7 @@ class SelfAttention(nn.Module):
         self.cached_v = {}
 
     # NOTE: attn_bias_or_two_vector is None during inference
-    def forward(self, x, attn_bias_or_two_vector: Union[torch.Tensor, Tuple[torch.IntTensor, torch.IntTensor]], attn_fn=None, rope2d_freqs_grid=[], scale_schedule=[], scale_ind=0, context_info=None, last_repetition_step=True, ref_text_scale_inds=[], block_idx=None, repeat_idx=None, keep_indices=None , mode='raw'):
+    def forward(self, x, attn_bias_or_two_vector: Union[torch.Tensor, Tuple[torch.IntTensor, torch.IntTensor]], attn_fn=None, rope2d_freqs_grid=[], scale_schedule=[], scale_ind=0, context_info=None, last_repetition_step=True, ref_text_scale_inds=[], block_idx=None, repeat_idx=None, keep_indices=None , mode='raw', args=None):
         """
         :param (fp32) x: shaped (B or batch_size, L or seq_length, C or hidden_dim); if seq-parallel is used, the `L` dim would be sharded (L = raw_seq_len//sp_size)
         :param (fp32) attn_bias_or_two_vector:
@@ -428,16 +429,17 @@ class SelfAttention(nn.Module):
                 text_importance = None
                 query_importance = None
                 #if scale_ind == 0:
-                if block_idx == 0 and scale_ind in [27, 28,29]:
+                if mode != 'raw' and block_idx == 0 and scale_ind in args.config['prunable']:
                     # Q: (B, Lq, H, D)
                     # K: (B, Lk, H, D)
                     if mode == 'ttm':
                         t1 = time.time()
                         scores = torch.matmul(query_states.to(torch.bfloat16), self.cached_k['t0'].repeat(1,self.num_key_value_groups,1,1).transpose(-1, -2)) * scale        # (B, H, L_q, L_text)
-                        query_importance = scores[:B//2].mean(dim=1)#.mean(dim=-1)   # (B, H, L_q)
+                        query_importance = torch.softmax(scores, dim=-1)
+                        #query_importance = query_importance[:B//2].mean(dim=1)#.mean(dim=-1)   
                         print('find pivotal text token cost: ',time.time()-t1)
                     elif mode == 'fastvar':
-                        ratio = 0.5 if scale_ind == 27 and repeat_idx == 0 else 0.6
+                        ratio = args.config['prune_ratio'][scale_ind][repeat_idx]
                         query_importance = token_mse_keep_indices(x, ratio)
                     elif mode == 'sparsevar':
                         query_importance = 1
@@ -557,11 +559,11 @@ class SelfAttnBlock(nn.Module):
             raise ValueError(f'arch {self.arch} not supported')
         
     # NOTE: attn_bias_or_two_vector is None during inference
-    def forward(self, x, cond_BD, ca_kv, attn_bias_or_two_vector, attn_fn=None, rope2d_freqs_grid=[], scale_schedule=[], scale_ind=0, context_info=None, last_repetition_step=True, ref_text_scale_inds=[], block_idx=None, repeat_idx=None, keep_indices=None, mode='raw'):
+    def forward(self, x, cond_BD, ca_kv, attn_bias_or_two_vector, attn_fn=None, rope2d_freqs_grid=[], scale_schedule=[], scale_ind=0, context_info=None, last_repetition_step=True, ref_text_scale_inds=[], block_idx=None, repeat_idx=None, keep_indices=None, mode='raw', args=None):
         residual = x
         hidden_states = x
         hidden_states = self.input_layernorm(hidden_states)
-        hidden_states, text_importance, query_importance = self.attn(hidden_states, attn_bias_or_two_vector, attn_fn, rope2d_freqs_grid, scale_schedule, scale_ind, context_info, last_repetition_step, ref_text_scale_inds, block_idx=block_idx, repeat_idx=repeat_idx, keep_indices=keep_indices, mode=mode)
+        hidden_states, text_importance, query_importance = self.attn(hidden_states, attn_bias_or_two_vector, attn_fn, rope2d_freqs_grid, scale_schedule, scale_ind, context_info, last_repetition_step, ref_text_scale_inds, block_idx=block_idx, repeat_idx=repeat_idx, keep_indices=keep_indices, mode=mode, args=args)
         hidden_states = residual + hidden_states
         # Fully Connected
         residual = hidden_states

@@ -614,7 +614,7 @@ def motion_prune_score(x, h, w):
     ).view(B, T, h, w)  # 还原维度
     return  prunable.clamp(0.0, 1.0).reshape(-1)
 
-def joint_time_scale_factor(t_index, T, s, s_min=26, s_max=29):
+def joint_time_scale_factor(t_index, T, s, s_min=27, alph=5, beta=0.2):
     """
     输出范围 [0,1]，表示该 token 因为其 (t,s) 位置带来的剪枝倾向：
         - s 越大越接近 1（更易剪）
@@ -637,8 +637,8 @@ def joint_time_scale_factor(t_index, T, s, s_min=26, s_max=29):
     # # ---- normalize t ----
     # t_norm = math.e**(t_index-T)       # 0..1
     # t_factor =  (1  - t_norm ) #*0.12                       # t=0 -> 1, t=T-1 -> 0
-    s_factor = math.e**((s - 27)*5)
-    t_factor = 1 - 0.2*(1-math.e**(-t_index))
+    s_factor = math.e**((s - s_min)*alph)
+    t_factor = 1 - beta*(1-math.e**(-t_index))
     #t_factor =  math.e**(-t_index*0.3)
     # ---- joint factor ----
     P_ts = s_factor * t_factor
@@ -650,7 +650,10 @@ def prune_keep_indices(text_score,
                        t_index, T,
                        s,h,w,
                        keep_ratio=None,
-                       std_threshold=True):
+                       std_threshold=True,
+                       alph=5,
+                       beta=0.2,
+                       s_min=27):
     """
     输入：
         text_score: (..., L)
@@ -667,7 +670,7 @@ def prune_keep_indices(text_score,
     # ---- step1: compute pruning probability per token ----
     P_text = semantic_prune_score(text_score)
     P_motion = motion_prune_score(motion_score,h,w)
-    P_ts = joint_time_scale_factor(t_index, T, s)
+    P_ts = joint_time_scale_factor(t_index, T, s,s_min=s_min, alph=alph,beta=beta)
     #P_ts = 0.5
     # 调 P_text, P_motion 分布图
     #plot_distribution(P_text, P_motion,  save_dir="/data3/chengqidong/mrg/InfinityStar/intro/text_mean")
@@ -717,7 +720,7 @@ class MultipleLayers(nn.Module):
         for i in range(index, index+num_blocks_in_a_chunk):
             self.module.append(ls[i])
 
-    def forward(self, x, cond_BD, ca_kv, attn_bias_or_two_vector, attn_fn=None, scale_schedule=None, checkpointing_full_block=False, rope2d_freqs_grid=None, scale_ind=None, context_info=None, last_repetition_step=True, ref_text_scale_inds=[], block_idx=None, repeat_idx=None, keep_indices=None, if_prune = True, summed_codes=None, mode='raw'):
+    def forward(self, x, cond_BD, ca_kv, attn_bias_or_two_vector, attn_fn=None, scale_schedule=None, checkpointing_full_block=False, rope2d_freqs_grid=None, scale_ind=None, context_info=None, last_repetition_step=True, ref_text_scale_inds=[], block_idx=None, repeat_idx=None, keep_indices=None, if_prune = True, summed_codes=None, mode='raw',args=None):
         h = x
         text = []
         
@@ -728,7 +731,7 @@ class MultipleLayers(nn.Module):
                 if keep_indices is not None and if_prune :#and scale_ind in [27,28,29]
                     h = h[:, keep_indices, :]
                     if_prune = False
-                h, text_importance, query_importance = m(h, cond_BD, ca_kv, attn_bias_or_two_vector, attn_fn, rope2d_freqs_grid, scale_schedule, scale_ind, context_info, last_repetition_step, ref_text_scale_inds ,block_idx=block_idx*6+idx, repeat_idx=repeat_idx, keep_indices=keep_indices, mode=mode)#
+                h, text_importance, query_importance = m(h, cond_BD, ca_kv, attn_bias_or_two_vector, attn_fn, rope2d_freqs_grid, scale_schedule, scale_ind, context_info, last_repetition_step, ref_text_scale_inds ,block_idx=block_idx*6+idx, repeat_idx=repeat_idx, keep_indices=keep_indices, mode=mode, args=args)#
                 if text_importance is not None:
                     text.append(text_importance)
                 if query_importance is not None:
@@ -737,7 +740,8 @@ class MultipleLayers(nn.Module):
                         block = H*w
                         time_idx = torch.arange(0, t*block, device=h.device)//block
                         s = repeat_idx if scale_ind < 28 else 1
-                        keep_indices = prune_keep_indices(query_importance, summed_codes, time_idx, t, scale_ind, H, w)
+                        keep_indices = prune_keep_indices(query_importance, summed_codes, 
+                        time_idx, t, scale_ind, H, w, s_min=args.config['s_min'], alph=args.config['alph'],beta=args.config['beta'],)
                         print(f'scale {scale_ind} rep {repeat_idx} prune ratio {100 - keep_indices.shape[0]/(t*block)*100}%')
                     elif mode == 'fastvar':
                         keep_indices = query_importance
@@ -747,7 +751,7 @@ class MultipleLayers(nn.Module):
                         mse = ((x - h)**2).mean(dim=-1)      # (B, L)
                         mse_mean = mse.mean(dim=0)          # (L,)
                         baseline = mse_mean.max()
-                        threshold = baseline * 0.8
+                        threshold = baseline * args.sparse
                         keep_indices = torch.where(mse_mean > threshold)[0]
 
                     # prune = query_importance[0].mean(dim=-1)#(L)
@@ -1451,7 +1455,7 @@ class Infinity(nn.Module):
         last_stage = prefix_tokens
         pbar.update(1)
         for block_idx, b in enumerate(block_chunks):
-            last_stage, text, query_importance = b(x=last_stage, cond_BD=cond_BD_or_gss, ca_kv=ca_kv, attn_bias_or_two_vector=attn_mask, attn_fn=None, scale_schedule=scale_schedule, rope2d_freqs_grid=rope_cache, scale_ind='t0', context_info=context_info, last_repetition_step=True, block_idx=block_idx, repeat_idx=0)
+            last_stage, text, query_importance = b(x=last_stage, cond_BD=cond_BD_or_gss, ca_kv=ca_kv, attn_bias_or_two_vector=attn_mask, attn_fn=None, scale_schedule=scale_schedule, rope2d_freqs_grid=rope_cache, scale_ind='t0', context_info=context_info, last_repetition_step=True, block_idx=block_idx, repeat_idx=0, args=args)
         
         # visual tokens forward
         ref_text_scale_inds = ['t0']
@@ -1459,11 +1463,13 @@ class Infinity(nn.Module):
         cum_scales = 0
         last_codes = None
         for si, pn in enumerate(scale_schedule): 
-            if mode == 'fastvar':
-                if si == 28:
-                    break  # si: i-th segment
-            if si == args.skip:
-                break  # si: i-th segment
+            if si == args.config['skip_scales']:
+                break
+            # if mode == 'fastvar':
+            #     if si == 28:
+            #         break  # si: i-th segment
+            # if si == args.skip:
+            #     break  # si: i-th segment
             rel_si_in_one_clip = si % scales_in_one_clip
             if si < scales_in_one_clip: # image
                 repeat_times = image_scale_repetition[si%scales_in_one_clip]
@@ -1488,7 +1494,7 @@ class Infinity(nn.Module):
                     last_stage, text, keep_indices = b(x=last_stage, cond_BD=cond_BD_or_gss, ca_kv=ca_kv, attn_bias_or_two_vector=attn_mask, attn_fn=None, scale_schedule=scale_schedule, 
                                     rope2d_freqs_grid=rope_cache, scale_ind=si, context_info=context_info, 
                                     last_repetition_step=last_repetition_step, ref_text_scale_inds=ref_text_scale_inds, block_idx=block_idx, repeat_idx=repeat_idx,
-                                    keep_indices= keep, if_prune=if_prune, summed_codes=summed_codes[-1], mode=mode)
+                                    keep_indices= keep, if_prune=if_prune, summed_codes=summed_codes[-1], mode=mode, args=args)
                     text_importance = text_importance + text
                     if keep_indices is not None:
                         keep = keep_indices

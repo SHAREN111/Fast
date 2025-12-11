@@ -13,6 +13,7 @@ import cv2
 import numpy as np
 import argparse
 from PIL import Image
+import yaml
 sys.path.append(osp.dirname(osp.dirname(__file__)))
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 from vbench_metric import cal_score
@@ -201,6 +202,13 @@ if __name__ == '__main__':
     args.max_repeat_times=10000
     args.enable_rewriter=enable_rewriter
     args.sparse = arg.sparse
+    config_path = os.path.join(base_dir, f'config/{arg.exp_name}.yaml')
+    try:
+        with open(config_path, 'r') as f:
+            args.config = yaml.safe_load(f)
+    except FileNotFoundError:
+        print(f"Config file not found: {config_path}")
+        args.config = {}  # 或者默认配置
 
     # load models
     pipe = InferencePipe(args)
@@ -283,14 +291,26 @@ if __name__ == '__main__':
         print(f"Video generation done: {gen_video_path=}")
 
     # ===== 计算平均并追加 =====
-    if arg.star_mode == 7 and arg.index == 4:
-        times, mems = zip(*time_mem_log.values())
-        avg_time = round(sum(times) / len(times), 2)
-        avg_mem  = round(sum(mems)  / len(mems),  2)
-        summary = {"average_time": avg_time, "average_memory_GB": avg_mem}
-        # with open(json_log_path, 'a', encoding='utf-8') as f:
-        #     f.write('\n# === average ===\n')
-        #     json.dump(summary, f, ensure_ascii=False, indent=2)
+    
+    times, mems = zip(*time_mem_log.values())
+    avg_time = round(sum(times) / len(times), 2)
+    avg_mem  = round(sum(mems)  / len(mems),  2)
+    summary = {"average_time": avg_time, "average_memory_GB": avg_mem}
+    if os.path.exists(json_log_path):
+        with open(json_log_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    else:
+        data = {}  # 文件不存在就创建一个空字典
 
-        print(f"All done! 平均时间: {avg_time}s, 平均显存: {avg_mem}GB")
-        cal_score(raw_dir, json_dir, name='all', unpruned_videos_path='/data3/chengqidong/mrg/InfinityStar/evaluation/raw', time=avg_time, memory=avg_mem)
+    # 3️⃣ 在原来的字典里添加 summary
+    data["summary"] = summary
+
+    # 4️⃣ 写回文件（覆盖原文件）
+    with open(json_log_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    print("Summary 已添加到 JSON 文件中。")
+
+    print(f"All done! 平均时间: {avg_time}s, 平均显存: {avg_mem}GB")
+    # if arg.star_mode == 7 and arg.index == 4:
+    #     cal_score(raw_dir, json_dir, name='all', unpruned_videos_path='/data3/chengqidong/mrg/InfinityStar/evaluation/raw', time=avg_time, memory=avg_mem)

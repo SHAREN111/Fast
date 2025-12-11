@@ -44,8 +44,41 @@ bash base.sh sparsevar_0.95 2 sparsevar 0.95
 bash base.sh sparsevar_0.95 3 sparsevar 0.95
 bash base.sh sparsevar_0.95 4 sparsevar 0.95
 
+bash base.sh FastVAR 0 fastvar
+bash base.sh FastVAR 1 fastvar
+bash base.sh FastVAR 2 fastvar
+bash base.sh FastVAR 3 fastvar
+bash base.sh FastVAR 4 fastvar
 
+bash base.sh FastVAR2 0 fastvar
+bash base.sh FastVAR2 1 fastvar
+bash base.sh FastVAR2 2 fastvar
+bash base.sh FastVAR2 3 fastvar
+bash base.sh FastVAR2 4 fastvar
 
+bash base.sh skip_27 0
+bash base.sh skip_27 1
+bash base.sh skip_27 2
+bash base.sh skip_27 3
+bash base.sh skip_27 4
+
+bash base.sh skip_28 0
+bash base.sh skip_28 1
+bash base.sh skip_28 2
+bash base.sh skip_28 3
+bash base.sh skip_28 4
+
+bash base.sh skip_29 0
+bash base.sh skip_29 1
+bash base.sh skip_29 2
+bash base.sh skip_29 3
+bash base.sh skip_29 4
+
+bash base.sh ttm 0 TTM1
+bash base.sh ttm 1 TTM1
+bash base.sh ttm 2 TTM1
+bash base.sh ttm 3 TTM1
+bash base.sh ttm 4 TTM1
 
 wait
 

@@ -117,84 +117,84 @@ def cal_score(videos_path, result_dir, name='all', unpruned_videos_path='/mnt/do
     print(summary_save_path)
     print("Final Score:", final_score)
 
-
-# -----------------------
-#   你的主脚本融合 total-score
-# -----------------------
-parser = argparse.ArgumentParser()
-parser.add_argument("--exp_name", type=str, default="raw",
-                    help="实验文件夹名：raw / prune / baseline / ...")
-parser.add_argument("--index", type=int, default=0,
-                    help="vbench index")
-parser.add_argument("--mode", type=str, default="raw",
-                    help="mode")
-parser.add_argument("--start_mode", type=int, default=0,
-                    help="vbench start index")
-arg = parser.parse_args()
-
-
+if __name__ == '__main__':
+    # -----------------------
+    #   你的主脚本融合 total-score
+    # -----------------------
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--exp_name", type=str, default="raw",
+                        help="实验文件夹名：raw / prune / baseline / ...")
+    parser.add_argument("--index", type=int, default=0,
+                        help="vbench index")
+    parser.add_argument("--mode", type=str, default="raw",
+                        help="mode")
+    parser.add_argument("--start_mode", type=int, default=0,
+                        help="vbench start index")
+    arg = parser.parse_args()
 
 
 
-videos_path = f"/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/dongchengqi/InfinityStar/TTM-dev/evaluation/{arg.exp_name}"
-mode = os.path.basename(videos_path)
-name = "all"
 
-result_dir = f"/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/dongchengqi/InfinityStar/TTM-dev/evaluation/results/{arg.exp_name}"
-os.makedirs(result_dir, exist_ok=True)
-#["subject_consistency", "background_consistency", "aesthetic_quality", "imaging_quality", "object_class", "multiple_objects", "color", "spatial_relationship", "scene", "temporal_style", 'overall_consistency', "human_action", "temporal_flickering", "motion_smoothness", "dynamic_degree", "appearance_style"]        
-my_VBench = VBench(
-    'cuda',
-    "/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/dongchengqi/InfinityStar/TTM-dev/evaluation/VBench_rewrited_prompt.json",
-    result_dir
-   
-)
 
-# ----------- 执行评估 -----------
-my_VBench.evaluate(videos_path=videos_path, name=name
-                #    , dimension_list = ["motion_smoothness"]
-                   )
+    videos_path = f"/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/dongchengqi/InfinityStar/TTM-dev/evaluation/{arg.exp_name}"
+    mode = os.path.basename(videos_path)
+    name = "all"
 
-# ========== 读取 all_eval_results.json ==========
-eval_json_path = osp.join(result_dir, f"{name}_eval_results.json")
+    result_dir = f"/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/dongchengqi/InfinityStar/TTM-dev/evaluation/results/{arg.exp_name}"
+    os.makedirs(result_dir, exist_ok=True)
+    #["subject_consistency", "background_consistency", "aesthetic_quality", "imaging_quality", "object_class", "multiple_objects", "color", "spatial_relationship", "scene", "temporal_style", 'overall_consistency', "human_action", "temporal_flickering", "motion_smoothness", "dynamic_degree", "appearance_style"]        
+    my_VBench = VBench(
+        'cuda',
+        "/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/dongchengqi/InfinityStar/TTM-dev/evaluation/VBench_rewrited_prompt.json",
+        result_dir
+    
+    )
 
-with open(eval_json_path, "r") as f:
-    eval_data = json.load(f)
+    # ----------- 执行评估 -----------
+    my_VBench.evaluate(videos_path=videos_path, name=name
+                    #    , dimension_list = ["motion_smoothness"]
+                    )
 
-# upload_data: dimension → raw mean score
-upload_data = {}
+    # ========== 读取 all_eval_results.json ==========
+    eval_json_path = osp.join(result_dir, f"{name}_eval_results.json")
 
-for key, value in eval_data.items():
-    if isinstance(value, list):
-        upload_data[key.replace("_", " ")] = value[0]
-    else:
-        upload_data[key.replace("_", " ")] = value
+    with open(eval_json_path, "r") as f:
+        eval_data = json.load(f)
 
-# 确保所有维度都有
-for key in TASK_INFO:
-    if key not in upload_data:
-        upload_data[key] = 0.0
+    # upload_data: dimension → raw mean score
+    upload_data = {}
 
-# ======== 官方 total-score 计算 ========
-normalized_score = get_normalized_score(upload_data)
-quality_score = get_quality_score(normalized_score)
-semantic_score = get_semantic_score(normalized_score)
-final_score = get_final_score(quality_score, semantic_score)
+    for key, value in eval_data.items():
+        if isinstance(value, list):
+            upload_data[key.replace("_", " ")] = value[0]
+        else:
+            upload_data[key.replace("_", " ")] = value
 
-# ========== 保存最终 summary ==========
-summary_save_path = osp.join(result_dir, "final_summary.json")
+    # 确保所有维度都有
+    for key in TASK_INFO:
+        if key not in upload_data:
+            upload_data[key] = 0.0
 
-summary = {
-    "raw_scores": upload_data,
-    "normalized_scores": normalized_score,
-    "quality_score": quality_score,
-    "semantic_score": semantic_score,
-    "final_score": final_score,
-}
+    # ======== 官方 total-score 计算 ========
+    normalized_score = get_normalized_score(upload_data)
+    quality_score = get_quality_score(normalized_score)
+    semantic_score = get_semantic_score(normalized_score)
+    final_score = get_final_score(quality_score, semantic_score)
 
-with open(summary_save_path, "w") as f:
-    json.dump(summary, f, indent=4)
+    # ========== 保存最终 summary ==========
+    summary_save_path = osp.join(result_dir, "final_summary.json")
 
-print("====== Final summary saved ======")
-print(summary_save_path)
-print("Final Score:", final_score)
+    summary = {
+        "raw_scores": upload_data,
+        "normalized_scores": normalized_score,
+        "quality_score": quality_score,
+        "semantic_score": semantic_score,
+        "final_score": final_score,
+    }
+
+    with open(summary_save_path, "w") as f:
+        json.dump(summary, f, indent=4)
+
+    print("====== Final summary saved ======")
+    print(summary_save_path)
+    print("Final Score:", final_score)
