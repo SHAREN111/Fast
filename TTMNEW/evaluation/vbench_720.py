@@ -233,7 +233,7 @@ if __name__ == '__main__':
     os.makedirs(json_dir, exist_ok=True)
 
     time_mem_log = {}          # 记录每条 {idx: (time, memory)}
-    json_log_path = osp.join(raw_dir, f'time_mem-{arg.index}.json')
+    json_log_path = osp.join(json_dir, f'time_mem-{arg.index}.json')
 
     prompts = load_refined_prompts(f'{base_dir}/TTM-dev/evaluation/VBench_rewrited_prompt.json')
     LENGTH_PROMPTS=len(prompts)//8
