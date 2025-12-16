@@ -433,11 +433,7 @@ class SelfAttention(nn.Module):
                     # Q: (B, Lq, H, D)
                     # K: (B, Lk, H, D)
                     if mode == 'ttm':
-                        t1 = time.time()
-                        scores = torch.matmul(query_states.to(torch.bfloat16), self.cached_k['t0'].repeat(1,self.num_key_value_groups,1,1).transpose(-1, -2)) * scale        # (B, H, L_q, L_text)
-                        query_importance = torch.softmax(scores, dim=-1)
-                        #query_importance = query_importance[:B//2].mean(dim=1)#.mean(dim=-1)   
-                        print('find pivotal text token cost: ',time.time()-t1)
+                        query_importance = 1
                     elif mode == 'fastvar':
                         ratio = args.config['prune_ratio'][scale_ind][repeat_idx]
                         query_importance = token_mse_keep_indices(x, ratio)

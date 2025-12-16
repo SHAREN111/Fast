@@ -152,6 +152,16 @@ def perform_inference(pipe, data, args):
             "memory": mem
         }
 
+def load_dino_v2(
+    name="dinov2_vitl14",   # vitb14 / vitl14 / vitg14
+    device="cuda",
+):
+    model = torch.hub.load(
+        "facebookresearch/dinov2",
+        name
+    )
+    model = model.to(device).eval()
+    return model
 
 if __name__ == '__main__':
     # For optimal performance, enabling the prompt rewriter is recommended.
@@ -209,7 +219,10 @@ if __name__ == '__main__':
     except FileNotFoundError:
         print(f"Config file not found: {config_path}")
         args.config = {}  # 或者默认配置
-
+    if args.mode == 'ttm':
+        args.dino_model = load_dino_v2(
+    name="dinov2_vitl14",
+    device="cuda")
     # load models
     pipe = InferencePipe(args)
 

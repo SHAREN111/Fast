@@ -1,0 +1,4 @@
+skip_scales: 30   # int 类型
+prunable: [26,27,28,29]
+sparse: 0.85
+
