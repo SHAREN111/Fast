@@ -1,4 +1,4 @@
-skip_scales: 29
+skip_scales: 28
 ts_alph: 5
 ts_beta: 0.1
 ts_gama: 0.3
@@ -6,7 +6,7 @@ ts_p_min: 0.1
 ts_s_min: 27
 nn_tem: 0.05
 nn_alph: 0.4
-prunable: [26, 27, 28]
+prunable: [27, 28]
 if_dino: True
 if_motion: True
 if_ts: True

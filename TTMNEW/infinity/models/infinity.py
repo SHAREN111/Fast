@@ -339,7 +339,10 @@ def joint_time_scale_factor2(T, s, s_min=26, s_max=29, args=None):
     t_index = torch.arange(T)
     s_factor = args.config['ts_alph']**(s - args.config['ts_s_min'])
     #s_factor = math.e**((s - 27)*1.2)
-    t_factor = args.config['ts_gama'] * math.e**(-t_index/5) + args.config['ts_beta']
+    if args.config['if_ts']:
+        t_factor = args.config['ts_gama'] * math.e**(-t_index/5) + args.config['ts_beta']
+    else:
+        t_factor = args.config['ts_gama'] + args.config['ts_beta']
     #t_factor =  math.e**(-t_index*0.3)
     # ---- joint factor ----
     P_ts =  1 - s_factor * t_factor
@@ -464,7 +467,12 @@ def prune_keep_indices(text_score,
     pro_importannce = propagate_importance_global_nn(current_codes[:,:,0:1] , current_codes, importance, args=args)
     P_motion = motion_prune_score(current_codes,dino_h,dino_w,last_codes=last_codes)
     P_ts = joint_time_scale_factor2( T, s, args=args)
-    region_keep_idx = range_p_indices(pro_importannce+P_motion, P_ts, largest=True, t=20)
+    score = pro_importannce+P_motion
+    if not args.config['if_dino']:
+        score = score - pro_importannce
+    if not args.config['if_motion']:
+        score = score - P_motion
+    region_keep_idx = range_p_indices(score, P_ts, largest=True, t=20)
     token_keep_idx = region_to_token_indices(
     region_keep_idx,
     T=T, H=h, W=w,
