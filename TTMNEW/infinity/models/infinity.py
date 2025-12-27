@@ -342,7 +342,7 @@ def joint_time_scale_factor2(T, s, s_min=26, s_max=29, args=None):
     if args.config['if_ts']:
         t_factor = args.config['ts_gama'] * math.e**(-t_index/5) + args.config['ts_beta']
     else:
-        t_factor = args.config['ts_gama'] + args.config['ts_beta']
+        t_factor = args.config['ts_gama'] *1**(-t_index/5) + args.config['ts_beta']
     #t_factor =  math.e**(-t_index*0.3)
     # ---- joint factor ----
     P_ts =  1 - s_factor * t_factor
@@ -437,8 +437,74 @@ def propagate_importance_global_nn(
     importance_seq = (importance_seq - p_min) / (p_max - p_min + 1e-6)
     return importance_seq.reshape(-1)
 
+def joint_time_scale_factor(T, s, h, w, s_min=26, s_max=29, args=None):
+    """
+    输出范围 [0,1]，表示该 token 因为其 (t,s) 位置带来的剪枝倾向：
+        - s 越大越接近 1（更易剪）
+        - t 越小越接近 1（更易剪）
+    """
+    #t_index = torch.arange(T)
+    block = h*w
+    t_index = torch.arange(0, T*block)//block
+    s_factor = 1 #3**(28 - s)
+    #s_factor = math.e**((s - 27)*1.2)
+
+    t_factor =   (29 -s )**(t_index/args.config['ts_alph']+args.config['ts_beta'])
+
+    #t_factor =  math.e**(-t_index*0.3)
+    # ---- joint factor ----
+    P_ts = s_factor * t_factor
+    return P_ts.to('cuda')
 
 def prune_keep_indices(text_score,
+                       current_codes,
+                       t_index, T,
+                       s,h,w,
+                       keep_ratio=None,
+                       std_threshold=True,
+                       last_codes=None,
+                       args=None):
+    """
+    输入：
+        text_score: (..., L)
+        motion_score: (..., L)
+        t_index: (L,)
+        T: total frames
+        s: scale
+        keep_ratio: 若不为 None，则保留 top ratio（例如 0.3）
+        std_threshold: 若 True 则采用 mean+std 的自适应阈值
+    输出：
+        keep_indices: (N_keep,) int64
+    """
+    t1 = time.time()
+    importance = args.sim
+    dino_h, dino_w = importance.shape
+    last_codes    = F.interpolate(last_codes,    size=(T, dino_h, dino_w), mode='trilinear', align_corners=False)
+    current_codes = F.interpolate(current_codes, size=(T, dino_h, dino_w), mode='trilinear', align_corners=False)
+    #importance = F.interpolate(args.sim[None, None], size=(h, w), mode='nearest')[0, 0]
+    pro_importannce = propagate_importance_global_nn(current_codes[:,:,0:1], current_codes, importance, args=args)
+    P_motion = motion_prune_score(current_codes,dino_h,dino_w,last_codes=last_codes)
+
+    P_ts = joint_time_scale_factor( T, s, dino_h, dino_w, args=args)
+    score = 1
+    if args.config['if_dino']:
+        score = score * pro_importannce
+    if args.config['if_motion']:
+        score = score * P_motion
+    if args.config['if_ts']:
+        score = score * P_ts
+    score_t = score.reshape(T, -1).mean(dim=1).clamp(0.01, 1.0).tolist()
+    score = score.clamp(0.01, 1.0)
+    #print(f'分t保留率{score_t}')
+    region_keep_idx = range_p_indices(score, score_t, largest=True, t=20)
+    token_keep_idx = region_to_token_indices(
+    region_keep_idx,
+    T=T, H=h, W=w,
+    t=T, h=dino_h, w=dino_w)
+    print(f'find keep_indices takes {time.time()-t1} s')
+    return token_keep_idx
+
+def prune_keep_indices_old(text_score,
                        current_codes,
                        t_index, T,
                        s,h,w,
