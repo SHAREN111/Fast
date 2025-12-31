@@ -348,9 +348,94 @@ def joint_time_scale_factor2(T, s, s_min=26, s_max=29, args=None):
     P_ts =  1 - s_factor * t_factor
     return P_ts.clamp(args.config['ts_p_min'], 1.0).tolist()
 
-
-
 def propagate_importance_global_nn(
+    ref,                # (B, d, 1, H, W)
+    current_codes,      # (B, d, T, H, W)
+    importance,         # (H, W)
+    args=None,
+):
+    """
+    Propagate importance from reference frame to subsequent frames
+    via global token nearest-neighbor matching (hard copy).
+
+    For each token in each current frame, find the most similar token
+    in the reference frame (cosine similarity), and copy its importance.
+
+    Returns:
+        importance_seq: (B, T, H, W)
+    """
+
+    B, d, _, H, W = ref.shape
+    _, _, T, _, _ = current_codes.shape
+    device = ref.device
+
+    # --------------------------------------------------
+    # 1) flatten & normalize tokens
+    # --------------------------------------------------
+    N = H * W
+
+    ref_tok = ref[:, :, 0].reshape(B, d, N)              # (B,d,N)
+    cur_tok = current_codes.reshape(B, d, T, N)          # (B,d,T,N)
+
+    ref_tok = F.normalize(ref_tok, dim=1)
+    cur_tok = F.normalize(cur_tok, dim=1)
+
+    # --------------------------------------------------
+    # 2) flatten importance
+    # --------------------------------------------------
+    importance = importance.to(device)
+    importance_ref = importance.view(1, N).repeat(B, 1)  # (B,N)
+
+    # --------------------------------------------------
+    # 3) global cosine similarity
+    #    sim[b,t,n,m] = <cur_tok[b,t,n], ref_tok[b,m]>
+    # --------------------------------------------------
+    sim = torch.einsum("bdtn,bdm->btnm", cur_tok, ref_tok)
+    #sim = sim.abs()
+    # temperature = args.config['nn_tem']
+    # weights = F.softmax(sim / temperature, dim=-1)
+    # # importance_seq = torch.einsum("btnm,bm->btn", weights, importance_ref)
+    # importance_raw = torch.einsum("btnm,bm->btn", weights, importance_ref)
+    # importance_raw[:,0] = importance_ref
+    # importance_raw: (B, T, N)
+        # # --------------------------------------------------
+    # # 4) hard nearest neighbor lookup
+    # # --------------------------------------------------
+    idx = sim.argmax(dim=-1)                              # (B,T,N)
+
+    # --------------------------------------------------
+    # 5) copy importance
+    # --------------------------------------------------
+    importance_raw = torch.gather(
+        importance_ref.unsqueeze(1).expand(-1, T, -1),   # (B,T,N)
+        dim=2,
+        index=idx,
+    )
+    # --------------------------------------------------
+    # EMA time smoothing (KEY PART)
+    # --------------------------------------------------
+    alpha = args.config['nn_alph']   # 当前帧权重，0.1~0.3 都可以试
+
+    importance_seq = torch.zeros_like(importance_raw)
+    importance_seq[:, 0] = importance_raw[:, 0]
+
+    for t in range(1, importance_raw.shape[1]):
+        importance_seq[:, t] = (
+            alpha * importance_raw[:, t]
+            + (1.0 - alpha) * importance_seq[:, t - 1]
+        )
+
+
+    # # --------------------------------------------------
+    # # 6) reshape back to spatial map
+    # # --------------------------------------------------
+    # importance_seq = importance_seq.view(B, T, H, W)
+    p_min = importance_seq.min(dim=-1)[0].view(B, T, 1)
+    p_max = importance_seq.max(dim=-1)[0].view(B, T, 1)
+    importance_seq = (importance_seq - p_min) / (p_max - p_min + 1e-6)
+    return importance_seq.reshape(-1)
+
+def propagate_importance_global_nn_old(
     ref,                # (B, d, 1, H, W)
     current_codes,      # (B, d, T, H, W)
     importance,         # (H, W)
@@ -456,7 +541,84 @@ def joint_time_scale_factor(T, s, h, w, s_min=26, s_max=29, args=None):
     P_ts = s_factor * t_factor
     return P_ts.to('cuda')
 
+def joint_time_scale_factor3(T, s, h, w, s_min=26, s_max=29, args=None):
+    """
+    输出范围 [0,1]，表示该 token 因为其 (t,s) 位置带来的剪枝倾向：
+        - s 越大越接近 1（更易剪）
+        - t 越小越接近 1（更易剪）
+    """
+    #t_index = torch.arange(T)
+    block = h*w
+    t_index = torch.arange(0, T*block)//block
+    s_factor = 1 #3**(28 - s)
+    #s_factor = math.e**((s - 27)*1.2)
+
+    t_factor =   32**(s - 27 )*2**(-t_index/4)
+
+    #t_factor =  math.e**(-t_index*0.3)
+    # ---- joint factor ----
+    P_ts = s_factor * t_factor
+    return P_ts.to('cuda')
+
 def prune_keep_indices(text_score,
+                       current_codes,
+                       t_index, T,
+                       s,h,w,
+                       keep_ratio=None,
+                       std_threshold=True,
+                       last_codes=None,
+                       args=None):
+    """
+    输入：
+        text_score: (..., L)
+        motion_score: (..., L)
+        t_index: (L,)
+        T: total frames
+        s: scale
+        keep_ratio: 若不为 None，则保留 top ratio（例如 0.3）
+        std_threshold: 若 True 则采用 mean+std 的自适应阈值
+    输出：
+        keep_indices: (N_keep,) int64
+    """
+    t1 = time.time()
+    # ---- step1: compute pruning probability per token ----
+    #P_text = semantic_prune_score(text_score)
+    # ref = args.first_code
+    # for i in range(T):
+    #     frame = current_codes[:,:,i]
+    importance = args.sim
+    dino_h, dino_w = importance.shape
+    #first_frame    = F.interpolate(args.first_code,size=(1, dino_h, dino_w), mode='trilinear', align_corners=False)
+    last_codes    = F.interpolate(last_codes,    size=(T, dino_h, dino_w), mode='trilinear', align_corners=False)
+    current_codes = F.interpolate(current_codes, size=(T, dino_h, dino_w), mode='trilinear', align_corners=False)
+    #importance = F.interpolate(args.sim[None, None], size=(h, w), mode='nearest')[0, 0]
+    pro_importannce = 1-propagate_importance_global_nn(current_codes[:,:,0:1], current_codes, importance, args=args)
+    #pro_importannce = (pro_importannce - pro_importannce.min())/(pro_importannce.max()-pro_importannce.min())
+    P_motion = motion_prune_score(current_codes,dino_h,dino_w,last_codes=last_codes)
+    P_motion = 1 - P_motion
+    #plot_distribution(P_local, P_motion,  save_dir="/data3/chengqidong/mrg/InfinityStar/intro/dino")
+    P_ts = joint_time_scale_factor3( T, s, dino_h, dino_w, args=args)
+
+    score = 1
+    if args.config['if_dino']:
+        score = score * pro_importannce
+    if args.config['if_motion']:
+        score = score * P_motion
+    if args.config['if_ts']:
+        score = score * P_ts
+    score_t = (1-score.reshape(T, -1).mean(dim=1).clamp(0.00, 0.99)).tolist()
+    score = score.clamp(0.01, 1.0)
+    #print(f'分t保留率{score_t}')
+    region_keep_idx = range_p_indices(score, score_t, largest=False, t=20)
+
+    token_keep_idx = region_to_token_indices(
+    region_keep_idx,
+    T=T, H=h, W=w,
+    t=T, h=dino_h, w=dino_w)
+    #print(f'find keep_indices takes {time.time()-t1} s')
+    return token_keep_idx
+
+def prune_keep_indices_old2(text_score,
                        current_codes,
                        t_index, T,
                        s,h,w,

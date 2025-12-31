@@ -1,47 +1,58 @@
 
 
-bash base.sh TTM10 0 ttm
-bash base.sh TTM10 1 ttm
-bash base.sh TTM10 2 ttm
-bash base.sh TTM10 3 ttm
-bash base.sh TTM10 4 ttm
+bash base.sh TTM15 0 ttm
+bash base.sh TTM15 1 ttm
+bash base.sh TTM15 2 ttm
+bash base.sh TTM15 3 ttm
+bash base.sh TTM15 4 ttm
 
-bash base.sh TTM11 0 ttm
-bash base.sh TTM11 1 ttm
-bash base.sh TTM11 2 ttm
-bash base.sh TTM11 3 ttm
-bash base.sh TTM11 4 ttm
+bash base.sh TTM16 0 ttm
+bash base.sh TTM16 1 ttm
+bash base.sh TTM16 2 ttm
+bash base.sh TTM16 3 ttm
+bash base.sh TTM16 4 ttm
 
-bash base.sh TTM12 0 ttm
-bash base.sh TTM12 1 ttm
-bash base.sh TTM12 2 ttm
-bash base.sh TTM12 3 ttm
-bash base.sh TTM12 4 ttm
+bash base.sh TTM17 0 ttm
+bash base.sh TTM17 1 ttm
+bash base.sh TTM17 2 ttm
+bash base.sh TTM17 3 ttm
+bash base.sh TTM17 4 ttm
 
-bash base.sh TTM13 0 ttm
-bash base.sh TTM13 1 ttm
-bash base.sh TTM13 2 ttm
-bash base.sh TTM13 3 ttm
-bash base.sh TTM13 4 ttm
+bash base.sh TTM18 0 ttm
+bash base.sh TTM18 1 ttm
+bash base.sh TTM18 2 ttm
+bash base.sh TTM18 3 ttm
+bash base.sh TTM18 4 ttm
 
-bash base.sh TTM14 0 ttm
-bash base.sh TTM14 1 ttm
-bash base.sh TTM14 2 ttm
-bash base.sh TTM14 3 ttm
-bash base.sh TTM14 4 ttm
+bash base.sh TTM19 0 ttm
+bash base.sh TTM19 1 ttm
+bash base.sh TTM19 2 ttm
+bash base.sh TTM19 3 ttm
+bash base.sh TTM19 4 ttm
 
+bash base.sh TTM20 0 ttm
+bash base.sh TTM20 1 ttm
+bash base.sh TTM20 2 ttm
+bash base.sh TTM20 3 ttm
+bash base.sh TTM20 4 ttm
 
-bash base.sh FastVAR9 0 fastvar
-bash base.sh FastVAR9 1 fastvar
-bash base.sh FastVAR9 2 fastvar
-bash base.sh FastVAR9 3 fastvar
-bash base.sh FastVAR9 4 fastvar
+bash base.sh TTM21 0 ttm
+bash base.sh TTM21 1 ttm
+bash base.sh TTM21 2 ttm
+bash base.sh TTM21 3 ttm
+bash base.sh TTM21 4 ttm
 
-bash base.sh FastVAR10 0 fastvar
-bash base.sh FastVAR10 1 fastvar
-bash base.sh FastVAR10 2 fastvar
-bash base.sh FastVAR10 3 fastvar
-bash base.sh FastVAR10 4 fastvar
+# bash base.sh FastVAR9 0 fastvar
+# bash base.sh FastVAR9 1 fastvar
+# bash base.sh FastVAR9 2 fastvar
+# bash base.sh FastVAR9 3 fastvar
+# bash base.sh FastVAR9 4 fastvar
+
+# bash base.sh FastVAR10 0 fastvar
+# bash base.sh FastVAR10 1 fastvar
+# bash base.sh FastVAR10 2 fastvar
+# bash base.sh FastVAR10 3 fastvar
+# bash base.sh FastVAR10 4 fastvar
 
 # bash base.sh SparseVAR_0.86 0 sparsevar
 # bash base.sh SparseVAR_0.86 1 sparsevar
