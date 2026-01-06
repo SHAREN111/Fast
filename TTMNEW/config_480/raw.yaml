@@ -9,4 +9,4 @@ nn_alph: 0.4
 prunable: [26, 27]
 if_dino: True
 if_motion: True
-if_ts: True
+if_ts: False
