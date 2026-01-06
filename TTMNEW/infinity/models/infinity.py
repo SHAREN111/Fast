@@ -553,7 +553,7 @@ def joint_time_scale_factor3(T, s, h, w, s_min=26, s_max=29, args=None):
     s_factor = 1 #3**(28 - s)
     #s_factor = math.e**((s - 27)*1.2)
 
-    t_factor =   32**(s - 27 )*2**(-t_index/4)
+    t_factor =   (2**args.config['ts_alph'])**(s - args.config['ts_s_min'] )*2**(-t_index/args.config['ts_beta'])
 
     #t_factor =  math.e**(-t_index*0.3)
     # ---- joint factor ----

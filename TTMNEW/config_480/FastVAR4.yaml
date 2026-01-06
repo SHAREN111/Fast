@@ -1,0 +1,6 @@
+skip_scales: 29   # int 类型
+prunable: [26,27]
+prune_ratio:     # 字典类型
+  26: [0.5, 0.5]
+  27: [0.4]
+
