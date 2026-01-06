@@ -226,7 +226,7 @@ if __name__ == '__main__':
     # load models
     pipe = InferencePipe(args)
 
-    save_dir = f'{base_dir}/TTM-dev/evaluation'
+    save_dir = f'{base_dir}/TTM-dev/evaluation_480'
     raw_dir = osp.join(save_dir, arg.exp_name)
     json_dir = osp.join(save_dir, 'results', arg.exp_name)
     os.makedirs(raw_dir, exist_ok=True)

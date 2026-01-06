@@ -1,8 +1,8 @@
-bash base_480.sh TTM1 0 raw
-bash base_480.sh TTM1 1 raw
-bash base_480.sh TTM1 2 raw
-bash base_480.sh TTM1 3 raw
-bash base_480.sh TTM1 4 raw
+bash base_480.sh raw 0 raw
+bash base_480.sh raw 1 raw
+bash base_480.sh raw 2 raw
+bash base_480.sh raw 3 raw
+bash base_480.sh raw 4 raw
 
 bash base_480.sh TTM1 0 ttm
 bash base_480.sh TTM1 1 ttm
