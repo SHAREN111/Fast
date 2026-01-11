@@ -1,62 +1,50 @@
-bash base_480.sh raw 0 raw
-bash base_480.sh raw 1 raw
-bash base_480.sh raw 2 raw
-bash base_480.sh raw 3 raw
-bash base_480.sh raw 4 raw
+bash base_480.sh TTM3 0 ttm
+bash base_480.sh TTM3 1 ttm
+bash base_480.sh TTM3 2 ttm
+bash base_480.sh TTM3 3 ttm
+bash base_480.sh TTM3 4 ttm
 
-bash base_480.sh TTM1 0 ttm
-bash base_480.sh TTM1 1 ttm
-bash base_480.sh TTM1 2 ttm
-bash base_480.sh TTM1 3 ttm
-bash base_480.sh TTM1 4 ttm
+bash base_480.sh TTM4 0 ttm
+bash base_480.sh TTM4 1 ttm
+bash base_480.sh TTM4 2 ttm
+bash base_480.sh TTM4 3 ttm
+bash base_480.sh TTM4 4 ttm
 
-bash base_480.sh FastVAR1 0 fastvar
-bash base_480.sh FastVAR1 1 fastvar
-bash base_480.sh FastVAR1 2 fastvar
-bash base_480.sh FastVAR1 3 fastvar
-bash base_480.sh FastVAR1 4 fastvar
+bash base_480.sh TTM2 0 ttm
+bash base_480.sh TTM2 1 ttm
+bash base_480.sh TTM2 2 ttm
+bash base_480.sh TTM2 3 ttm
+bash base_480.sh TTM2 4 ttm
 
-bash base_480.sh FastVAR2 0 fastvar
-bash base_480.sh FastVAR2 1 fastvar
-bash base_480.sh FastVAR2 2 fastvar
-bash base_480.sh FastVAR2 3 fastvar
-bash base_480.sh FastVAR2 4 fastvar
+bash base_480.sh FastVAR5 0 fastvar
+bash base_480.sh FastVAR5 1 fastvar
+bash base_480.sh FastVAR5 2 fastvar
+bash base_480.sh FastVAR5 3 fastvar
+bash base_480.sh FastVAR5 4 fastvar
 
-bash base_480.sh FastVAR3 0 fastvar
-bash base_480.sh FastVAR3 1 fastvar
-bash base_480.sh FastVAR3 2 fastvar
-bash base_480.sh FastVAR3 3 fastvar
-bash base_480.sh FastVAR3 4 fastvar
+bash base_480.sh FastVAR6 0 fastvar
+bash base_480.sh FastVAR6 1 fastvar
+bash base_480.sh FastVAR6 2 fastvar
+bash base_480.sh FastVAR6 3 fastvar
+bash base_480.sh FastVAR6 4 fastvar
 
-bash base_480.sh FastVAR4 0 fastvar
-bash base_480.sh FastVAR4 1 fastvar
-bash base_480.sh FastVAR4 2 fastvar
-bash base_480.sh FastVAR4 3 fastvar
-bash base_480.sh FastVAR4 4 fastvar
+bash base_480.sh SparseVAR_0.96 0 sparsevar
+bash base_480.sh SparseVAR_0.96 1 sparsevar
+bash base_480.sh SparseVAR_0.96 2 sparsevar
+bash base_480.sh SparseVAR_0.96 3 sparsevar
+bash base_480.sh SparseVAR_0.96 4 sparsevar
 
-bash base_480.sh SparseVAR_0.80 0 sparsevar
-bash base_480.sh SparseVAR_0.80 1 sparsevar
-bash base_480.sh SparseVAR_0.80 2 sparsevar
-bash base_480.sh SparseVAR_0.80 3 sparsevar
-bash base_480.sh SparseVAR_0.80 4 sparsevar
+bash base_480.sh SparseVAR_0.92 0 sparsevar
+bash base_480.sh SparseVAR_0.92 1 sparsevar
+bash base_480.sh SparseVAR_0.92 2 sparsevar
+bash base_480.sh SparseVAR_0.92 3 sparsevar
+bash base_480.sh SparseVAR_0.92 4 sparsevar
 
-bash base_480.sh SparseVAR_0.87 0 sparsevar
-bash base_480.sh SparseVAR_0.87 1 sparsevar
-bash base_480.sh SparseVAR_0.87 2 sparsevar
-bash base_480.sh SparseVAR_0.87 3 sparsevar
-bash base_480.sh SparseVAR_0.87 4 sparsevar
-
-bash base_480.sh SparseVAR_0.85 0 sparsevar
-bash base_480.sh SparseVAR_0.85 1 sparsevar
-bash base_480.sh SparseVAR_0.85 2 sparsevar
-bash base_480.sh SparseVAR_0.85 3 sparsevar
-bash base_480.sh SparseVAR_0.85 4 sparsevar
-
-bash base_480.sh SparseVAR_0.90 0 sparsevar
-bash base_480.sh SparseVAR_0.90 1 sparsevar
-bash base_480.sh SparseVAR_0.90 2 sparsevar
-bash base_480.sh SparseVAR_0.90 3 sparsevar
-bash base_480.sh SparseVAR_0.90 4 sparsevar
+bash base_480.sh SparseVAR_0.94 0 sparsevar
+bash base_480.sh SparseVAR_0.94 1 sparsevar
+bash base_480.sh SparseVAR_0.94 2 sparsevar
+bash base_480.sh SparseVAR_0.94 3 sparsevar
+bash base_480.sh SparseVAR_0.94 4 sparsevar
 
 wait
 
